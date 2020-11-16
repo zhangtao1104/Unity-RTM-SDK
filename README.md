@@ -17,6 +17,7 @@ With this sample app, you can:
 - Leave channel
 - Logout RTM server
 - Token Authentication
+![Screen Shot 2020-11-16 at 2 02 41 PM](https://user-images.githubusercontent.com/1261195/99313438-6aba8e00-2814-11eb-9a29-07927ee655ca.png)
 
 ## Developer Environment Requirements
 - Unity3d 2017 or above
@@ -36,31 +37,19 @@ To build and run the sample application, get an App ID:
 
 ### Run the Application   
 
-1. First clone or download this repository (the package can also be downloaded directly from this link: https://bit.ly/3grvN9C)
+1. First donwload the SDK from the release section of this Repo; Import that package to your Unity project.
 2. Open **Assets** > **Scenes** > **MainScene.unity** in your Unity3D Editor
-3. Next go into your Heirarchy window and select **MessengerManager**, in the Inspector add your **App ID** to to the **AppID** Input field
+3. Next go into your Heirarchy window and select **ChatManager**, in the Inspector add your **App ID** to to the **AppID** Input field
+4. Optional: to test image upload, fill in the local image path in the "Image Path" field of ChatManager
+![Unity_2017 chat manager](https://user-images.githubusercontent.com/1261195/99313131-e36d1a80-2813-11eb-9628-be633fb818dc.png)
 
 #### Test in Editor 
 1. Go to **File** > **Builds** > **Platform** and select either Windows or Mac depending on the device you are working on. 
 2. Press the Unity Play button to run the example scene 
 
-#### Deploy to Windows, Mac, Android
-1. Deploy to Mac, Android, and Windows by simply changing the Platform in the **File** > **Build Settings**, then switch to your prefered platform
-2. Hit **Build and Run**
+#### Deploy to Windows, Mac, Android and iOS
+Simply follow the regular Unity deployment work flow.
 
-#### Deploy to iOS
-1. Change Platform to iOS in the Platform in the **File** > **Build Settings** Window, hit **Build And Run**
-2. In Xcode under the **General** Tab, under **Targets** > **Unity-iPhone**> **Frameworks, Libaries, and Embedded Content** change **AgoraRtmIos.framework** to **Embed & Sign**
-3. Press the Play button in Xcode to build to your device
-
-Example exported XCode setting (Unity 2017,2018)
-![rtm2018-sign](https://user-images.githubusercontent.com/1261195/90598897-c68b6180-e1a8-11ea-841c-12d06cf635d2.png)
-
-Example exported XCode setting (Unity 2019.3)
-![rtm2019-sign](https://user-images.githubusercontent.com/1261195/90599047-05211c00-e1a9-11ea-9b2b-ac8114101a0d.png)
-If the two Agora frameworks did not show up in the list, drag them from project file tree over.
-
-Here is a video recording to show iOS build working,  [link to video](https://bit.ly/3aWvPEa)
 
 ## Resources
 
