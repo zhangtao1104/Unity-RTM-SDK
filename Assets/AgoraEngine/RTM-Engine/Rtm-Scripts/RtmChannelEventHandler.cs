@@ -260,6 +260,7 @@ namespace agora_rtm {
         }
 
         public void Release() {
+			Debug.Log("RtmChannelEventHandler Release");
             if (channelEventHandlerPtr == IntPtr.Zero) {
                 return;
             }
