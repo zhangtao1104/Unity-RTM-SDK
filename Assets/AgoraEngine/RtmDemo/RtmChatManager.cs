@@ -35,9 +35,11 @@ namespace io.agora.rtm.demo
 
         private RtmClient rtmClient = null;
         private RtmChannel channel;
+        private RtmCallManager callManager;
 
         private RtmClientEventHandler clientEventHandler;
         private RtmChannelEventHandler channelEventHandler;
+        private RtmCallEventHandler callEventHandler;
 
         string _userName = "";
         string UserName {
@@ -75,6 +77,7 @@ namespace io.agora.rtm.demo
         {
             clientEventHandler = new RtmClientEventHandler();
             channelEventHandler = new RtmChannelEventHandler();
+            callEventHandler = new RtmCallEventHandler();
 
             rtmClient = new RtmClient(appId, clientEventHandler);
 #if UNITY_EDITOR
@@ -92,6 +95,7 @@ namespace io.agora.rtm.demo
             channelEventHandler.OnMessageReceived = OnChannelMessageReceivedHandler;
 
             // Optional, tracking members
+            channelEventHandler.OnGetMembers = OnGetMembersHandler;
             channelEventHandler.OnMemberCountUpdated = OnMemberCountUpdatedHandler;
             channelEventHandler.OnMemberJoined = OnMemberJoinedHandler;
             channelEventHandler.OnMemberLeft = OnMemberLeftHandler;
@@ -102,6 +106,19 @@ namespace io.agora.rtm.demo
             clientEventHandler.OnSendMessageResult = OnSendMessageResultHandler;
             clientEventHandler.OnMediaDownloadToFileResult = OnMediaDownloadToFileResultHandler;
             clientEventHandler.OnMediaDownloadToMemoryResult = OnMediaDownloadToMemoryResultHandler;
+
+            // invite
+            callEventHandler.OnLocalInvitationAccepted = OnLocalInvitationAcceptedHandler;
+            callEventHandler.OnLocalInvitationCanceled = OnLocalInvitationCanceledHandler;
+            callEventHandler.OnLocalInvitationFailure = OnLocalInvitationFailureHandler;
+            callEventHandler.OnLocalInvitationReceivedByPeer = OnLocalInvitationReceivedByPeerHandler;
+            callEventHandler.OnLocalInvitationRefused = OnLocalInvitationRefusedHandler;
+            
+	        callEventHandler.OnRemoteInvitationAccepted = OnRemoteInvitationAcceptedHandler;
+            callEventHandler.OnRemoteInvitationCanceled = OnRemoteInvitationCanceledHandler;
+            callEventHandler.OnRemoteInvitationFailure = OnRemoteInvitationFailureHandler;
+            callEventHandler.OnRemoteInvitationReceived = OnRemoteInvitationReceivedHandler;
+            callEventHandler.OnRemoteInvitationRefused = OnRemoteInvitationRefusedHandler;
 
             // state
             clientEventHandler.OnConnectionStateChanged = OnConnectionStateChangedHandler;
@@ -154,8 +171,10 @@ namespace io.agora.rtm.demo
 
         public void ChannelMemberCountButtonPressed()
         {
-            int totalMemebers = channel.GetMembers();
-            messageDisplay.AddTextToDisplay("Total members = " + totalMemebers, Message.MessageType.Info);
+            if (channel != null)
+            {
+                channel.GetMembers();
+            }
         }
 
         public void JoinChannel()
@@ -210,7 +229,7 @@ namespace io.agora.rtm.demo
         string ImageMediaId { get; set; }
         // Sender will get this assign in callback
         ImageMessage RcvImageMessage { get; set; }
-        
+
         public void UploadImageToPeer()
         {
             if (!System.IO.File.Exists(ImagePath))
@@ -234,7 +253,7 @@ namespace io.agora.rtm.demo
         }
 
         public void SendImageToPeer()
-        { 
+        {
             string peer = peerUserBox.text;
             if (string.IsNullOrEmpty(peer))
             {
@@ -251,6 +270,26 @@ namespace io.agora.rtm.demo
                     enableOfflineMessaging: true,
                     enableHistoricalMessaging: true);
             }
+        }
+
+        #endregion
+        #region  -- Invite ---------------------------
+
+        public void InvitePeer()
+        {
+            string peerUid = peerUserBox.text;
+            if (string.IsNullOrEmpty(peerUid))
+            {
+                return;
+	        }
+            callManager = rtmClient.GetRtmCallManager(callEventHandler);
+            // Creates LocalInvitation
+            LocalInvitation invitation = callManager.CreateLocalCallInvitation(peerUid);
+            invitation.SetChannelId(ChannelName);
+            invitation.SetContent("Calling You...hello");
+            // Sends call invitation
+            int rc = callManager.SendLocalInvitation(invitation);
+            Debug.Log("Send invitation to " + peerUid + " rc = " + rc) ;
         }
 
         #endregion
@@ -346,6 +385,16 @@ namespace io.agora.rtm.demo
             messageDisplay.AddTextToDisplay(userId + ": " + message.GetText(), Message.MessageType.ChannelMessage);
         }
 
+        void OnGetMembersHandler(int id, RtmChannelMember[] members, int userCount, GET_MEMBERS_ERR errorCode)
+        {
+            if (errorCode == GET_MEMBERS_ERR.GET_MEMBERS_ERR_OK)
+            {
+                messageDisplay.AddTextToDisplay("Total members = " + userCount, Message.MessageType.Info);
+            } else { 
+                messageDisplay.AddTextToDisplay("something is wrong with GetMembers:" + errorCode.ToString(), Message.MessageType.Error);
+	        }
+        }
+
         void OnMessageReceivedFromPeerHandler(int id, string peerId, TextMessage message)
         {
             Debug.Log("client OnMessageReceivedFromPeer id = " + id + ", from user:" + peerId + " text:" + message.GetText());
@@ -375,8 +424,8 @@ namespace io.agora.rtm.demo
         {
             string msg = string.Format("Sent message with id:{0} MessageId:{1} errorCode:{2}", id, messageId, errorCode);
             Debug.Log(msg);
-            messageDisplay.AddTextToDisplay(msg, errorCode == PEER_MESSAGE_ERR_CODE.PEER_MESSAGE_ERR_OK?Message.MessageType.Info:Message.MessageType.Error);
-	    }
+            messageDisplay.AddTextToDisplay(msg, errorCode == PEER_MESSAGE_ERR_CODE.PEER_MESSAGE_ERR_OK ? Message.MessageType.Info : Message.MessageType.Error);
+        }
 
         void OnImageMediaUploadResultHandler(int id, long requestId, ImageMessage imageMessage, UPLOAD_MEDIA_ERR_CODE errorCode)
         {
@@ -385,7 +434,7 @@ namespace io.agora.rtm.demo
             messageDisplay.AddTextToDisplay(msg, Message.MessageType.Info);
             ImageMediaId = imageMessage.GetMediaId();
             SendMessageButton.interactable = errorCode == UPLOAD_MEDIA_ERR_CODE.UPLOAD_MEDIA_ERR_OK;
-	    }
+        }
 
         void OnImageMessageReceivedFromPeerHandler(int id, string peerId, ImageMessage imageMessage)
         {
@@ -397,9 +446,9 @@ namespace io.agora.rtm.demo
         }
 
         void OnMediaDownloadToFileResultHandler(int id, long requestId, DOWNLOAD_MEDIA_ERR_CODE code)
-        { 
+        {
             Debug.LogFormat("Download id:{0} requestId:{1} errorCode:{2}", id, requestId, code);
-	    }
+        }
 
         void OnMediaDownloadToMemoryResultHandler(int id, long requestId, byte[] memory, long length, DOWNLOAD_MEDIA_ERR_CODE code)
         {
@@ -411,6 +460,76 @@ namespace io.agora.rtm.demo
         void OnConnectionStateChangedHandler(int id, CONNECTION_STATE state, CONNECTION_CHANGE_REASON reason)
         {
             string msg = string.Format("connection state changed id:{0} state:{1} reason:{2}", id, state, reason);
+            Debug.Log(msg);
+            messageDisplay.AddTextToDisplay(msg, Message.MessageType.Info);
+        }
+
+        // --------------------------------------
+        void OnLocalInvitationReceivedByPeerHandler(LocalInvitation localInvitation)
+        {
+            string msg = string.Format("OnLocalInvitationReceived channel:{0}, callee:{1}", localInvitation.GetChannelId(), localInvitation.GetCalleeId());
+            Debug.Log(msg);
+            messageDisplay.AddTextToDisplay(msg, Message.MessageType.Info);
+	    }
+
+        void OnLocalInvitationCanceledHandler(LocalInvitation localInvitation)
+        { 
+            string msg = string.Format("OnLocalInvitationCanceled channel:{0}, callee:{1}", localInvitation.GetChannelId(), localInvitation.GetCalleeId());
+            Debug.Log(msg);
+            messageDisplay.AddTextToDisplay(msg, Message.MessageType.Info);
+	    }
+
+        void OnLocalInvitationFailureHandler(LocalInvitation localInvitation, LOCAL_INVITATION_ERR_CODE errorCode)
+        {
+            string msg = string.Format("OnLocalInvitationFailure channel:{0}, callee:{1} error:{2}", 
+		        localInvitation.GetChannelId(), localInvitation.GetCalleeId(), errorCode);
+            Debug.Log(msg);
+            messageDisplay.AddTextToDisplay(msg, Message.MessageType.Info);
+        }
+
+        void OnLocalInvitationAcceptedHandler(LocalInvitation localInvitation, string response)
+        { 
+            string msg = string.Format("OnLocalInvitationAccepted channel:{0}, callee:{1}", localInvitation.GetChannelId(), localInvitation.GetCalleeId());
+            Debug.Log(msg);
+            messageDisplay.AddTextToDisplay(msg, Message.MessageType.Info);
+	    }
+        
+        void OnLocalInvitationRefusedHandler(LocalInvitation localInvitation, string response)
+        { 
+            string msg = string.Format("OnLocalInvitationRefused channel:{0}, callee:{1}", localInvitation.GetChannelId(), localInvitation.GetCalleeId());
+            Debug.Log(msg);
+            messageDisplay.AddTextToDisplay(msg, Message.MessageType.Info);
+	
+	    }
+        void OnRemoteInvitationRefusedHandler(RemoteInvitation remoteInvitation)
+        { 
+            string msg = string.Format("OnRemoteInvitationRefused channel:{0}, callee:{1}", remoteInvitation.GetChannelId(), remoteInvitation.GetCallerId());
+            Debug.Log(msg);
+            messageDisplay.AddTextToDisplay(msg, Message.MessageType.Info);
+	    }
+
+        void OnRemoteInvitationAcceptedHandler(RemoteInvitation remoteInvitation)
+        {
+            string msg = string.Format("OnRemoteInvitationAccepted channel:{0}, callee:{1}", remoteInvitation.GetChannelId(), remoteInvitation.GetCallerId());
+            Debug.Log(msg);
+            messageDisplay.AddTextToDisplay(msg, Message.MessageType.Info);
+        }
+
+        void OnRemoteInvitationReceivedHandler(RemoteInvitation remoteInvitation)
+        {
+            string msg = string.Format("OnRemoteInvitationReceived channel:{0}, callee:{1}", remoteInvitation.GetChannelId(), remoteInvitation.GetCallerId());
+            Debug.Log(msg);
+            messageDisplay.AddTextToDisplay(msg, Message.MessageType.Info);
+        }
+        void OnRemoteInvitationFailureHandler(RemoteInvitation remoteInvitation, REMOTE_INVITATION_ERR_CODE errorCode)
+        { 
+            string msg = string.Format("OnRemoteInvitationFailure channel:{0}, callee:{1}", remoteInvitation.GetChannelId(), remoteInvitation.GetCallerId());
+            Debug.Log(msg);
+            messageDisplay.AddTextToDisplay(msg, Message.MessageType.Info);
+	    }
+        void OnRemoteInvitationCanceledHandler(RemoteInvitation remoteInvitation)
+        { 
+            string msg = string.Format("OnRemoteInvitationCanceled channel:{0}, callee:{1}", remoteInvitation.GetChannelId(), remoteInvitation.GetCallerId());
             Debug.Log(msg);
             messageDisplay.AddTextToDisplay(msg, Message.MessageType.Info);
 	    }

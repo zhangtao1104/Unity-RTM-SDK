@@ -1127,6 +1127,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   appId: 
   token: 
+  ImagePath: 
   userNameInput: {fileID: 1850980723}
   channelNameInput: {fileID: 333252911}
   channelMsgInputBox: {fileID: 2114270691}
@@ -1136,7 +1137,6 @@ MonoBehaviour:
   appIdDisplayText: {fileID: 1419739165}
   tokenDisplayText: {fileID: 1163824507}
   messageDisplay: {fileID: 436596860}
-  ImageURL: /Users/chengr/Downloads/mono-boad.jpg
   UploadImageButton: {fileID: 2081602385}
   SendMessageButton: {fileID: 1654590448}
   DownloadImageButton: {fileID: 1698696156}
@@ -3225,7 +3225,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1385834022
 RectTransform:
   m_ObjectHideFlags: 0
